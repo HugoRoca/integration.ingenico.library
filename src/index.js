@@ -1,10 +1,64 @@
-// import forge from '../node_modules/node-forge/dist/forge.min.js'
-import connectsdk from './ingenico/connectsdk'
+const _ = require('lodash')
 
-console.log('entro');
-console.log(connectsdk);
+class Payment {
+  constructor(sessionDetails, paymentDetails, cardDetails) {
+    this.sessionDetails = sessionDetails
+    this.paymentDetails = paymentDetails
+    this.cardDetails = cardDetails
 
-// apikey 7e009924db45fc40
+    this.session = this.createSession()
+    console.log(this.session);
 
-// secretapikey r06IODJrDvXhWodom/PO7+VSeT1ShP5GXfOi9/lWNUQ=
+  }
 
+  createSession() {
+    return new connectsdk.Session({
+      clientSessionId: this.sessionDetails.clientSessionId,
+      customerId: this.sessionDetails.customerId,
+      clientApiUrl: this.sessionDetails.clientApiUrl,
+      assetUrl: this.sessionDetails.assetUrl
+    })
+  }
+
+  async processPayment() {
+    // const iinDetailsResponse = await this.getIinDetails()
+    // if (iinDetailsResponse.status !== 'SUPPORTED') {
+    //   console.error("Card check error: " + iinDetailsResponse.status)
+    //   document.querySelector('.output').innerText = 'Something went wrong, check the console for more information.'
+    //   return
+    // }
+    // console.log('iinDetailsResponse', iinDetailsResponse);
+    const paymentProduct = this.getPaymentProduct()
+    console.log(paymentProduct);
+  }
+
+  getPaymentProduct() {
+    this.session.getPaymentProduct('1', this.paymentDetails).then((paymentProduct) => {
+      return paymentProduct
+    }, (error) => {
+      console.log('paymentProduct', error);
+    })
+  }
+
+  async getIinDetails() {
+    return new Promise((resolve, reject) => {
+      this.session.getIinDetails(this.cardDetails.cardNumber, this.paymentDetails).then((iinDetailsResponse) => {
+        resolve(iinDetailsResponse)
+      }, (error) => {
+        console.log(error)
+        reject(error)
+      })
+    });
+  }
+
+  // getEncryptor() {
+  //   let encryptor = this.session.getEncryptor
+  //   encryptor.encrypt(paymentRequest).then((encryptedString) => {
+
+  //   }, (errors) => {
+
+  //   })
+  // }
+}
+
+module.exports = Payment

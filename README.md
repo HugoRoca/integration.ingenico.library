@@ -1,1 +1,2 @@
-# integration.ingenico.library
+# library-belpay-frontend
+library-belpay-frontend
