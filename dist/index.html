@@ -14,12 +14,6 @@
   <script src="./payment.providers.ingenico.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const sessionDetails = {
-        clientSessionId: "47e9dc332ca24273818be2a46072e006",
-        customerId: "9991-0d93d6a0e18443bd871c89ec6d38a873",
-        clientApiUrl: "https://clientapi.com",
-        assetUrl: "https://asset.com"
-      }
       const paymentDetails = {
         totalAmount: 10000,
         countryCode: "NL",
@@ -34,7 +28,6 @@
       }
       if (typeof Payment !== "undefined") {
         const payment = new Payment(
-          sessionDetails,
           paymentDetails,
           cardDetails
         );

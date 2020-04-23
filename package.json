@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/tecnologiadigital/library-belpay-frontend#readme",
   "dependencies": {
+    "axios": "^0.19.2",
     "lodash": "^4.17.15",
     "node-forge": "^0.9.1",
     "webpack": "^4.43.0",

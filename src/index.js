@@ -1,64 +1,77 @@
 const _ = require('lodash')
+const axios = require('axios')
+const config = require('./config')
 
 class Payment {
-  constructor(sessionDetails, paymentDetails, cardDetails) {
-    this.sessionDetails = sessionDetails
+  constructor(paymentDetails, cardDetails, output) {
     this.paymentDetails = paymentDetails
     this.cardDetails = cardDetails
-
-    this.session = this.createSession()
-    console.log(this.session);
-
+    this.output = output
   }
 
-  createSession() {
+  getSessionDetails() {
+    axios.defaults.headers.post['Access-Control-Allow-Origin'] = '*'
+    return axios.post(config.urlGetSessionDetails, { merchantId: config.merchantId })
+  }
+
+  createSession(sessionDetails) {
+    const details = sessionDetails.data
     return new connectsdk.Session({
-      clientSessionId: this.sessionDetails.clientSessionId,
-      customerId: this.sessionDetails.customerId,
-      clientApiUrl: this.sessionDetails.clientApiUrl,
-      assetUrl: this.sessionDetails.assetUrl
+      clientSessionId: details.body.clientSessionId,
+      customerId: details.body.customerId,
+      clientApiUrl: details.body.clientApiUrl,
+      assetUrl: details.body.assetUrl
     })
   }
 
-  async processPayment() {
-    // const iinDetailsResponse = await this.getIinDetails()
-    // if (iinDetailsResponse.status !== 'SUPPORTED') {
-    //   console.error("Card check error: " + iinDetailsResponse.status)
-    //   document.querySelector('.output').innerText = 'Something went wrong, check the console for more information.'
-    //   return
-    // }
-    // console.log('iinDetailsResponse', iinDetailsResponse);
-    const paymentProduct = this.getPaymentProduct()
-    console.log(paymentProduct);
+  getIinDetails(session) {
+    return session.getIinDetails(this.cardDetails.cardNumber, this.paymentDetails)
   }
 
-  getPaymentProduct() {
-    this.session.getPaymentProduct('1', this.paymentDetails).then((paymentProduct) => {
-      return paymentProduct
-    }, (error) => {
-      console.log('paymentProduct', error);
-    })
+  getPaymentProduct(session, iinDetailsResponse) {
+    return session.getPaymentProduct(iinDetailsResponse.paymentProductId, this.paymentDetails)
   }
 
-  async getIinDetails() {
-    return new Promise((resolve, reject) => {
-      this.session.getIinDetails(this.cardDetails.cardNumber, this.paymentDetails).then((iinDetailsResponse) => {
-        resolve(iinDetailsResponse)
+  getEncryptor(session, paymentRequest) {
+    return session.getEncryptor().encrypt(paymentRequest)
+  }
+
+  processPayment() {
+    this.getSessionDetails().then((sessionDetails) => {
+      const session = this.createSession(sessionDetails)
+      this.getIinDetails(session).then((iinDetailsResponse) => {
+        if (iinDetailsResponse.status !== "SUPPORTED") {
+          console.error("Card check error: " + iinDetailsResponse.status);
+          return;
+        }
+        this.getPaymentProduct(session, iinDetailsResponse).then((paymentProduct) => {
+          let paymentRequest = session.getPaymentRequest()
+          paymentRequest.setPaymentProduct(paymentProduct)
+          paymentRequest.setValue("cardNumber", this.cardDetails.cardNumber)
+          paymentRequest.setValue("cvv", this.cardDetails.cvv)
+          paymentRequest.setValue("expiryDate", this.cardDetails.expiryDate)
+
+          if (!paymentRequest.isValid()) {
+            console.error('error', paymentRequest.getErrorMessageIds())
+          } else {
+            this.getEncryptor(session, paymentRequest).then((paymentHash) => {
+              console.log(paymentHash)
+              return paymentHash
+            }, (error) => {
+              console.error('Failed encrypting the payload, check your credentials');
+              console.log('getEncryptor', error)
+            })
+          }
+        }, (error) => {
+          console.log('getPaymentProduct', error)
+        })
       }, (error) => {
-        console.log(error)
-        reject(error)
+        console.log('getIinDetails', error)
       })
-    });
+    }, (error) => {
+      console.log('getSessionDetails', error)
+    })
   }
-
-  // getEncryptor() {
-  //   let encryptor = this.session.getEncryptor
-  //   encryptor.encrypt(paymentRequest).then((encryptedString) => {
-
-  //   }, (errors) => {
-
-  //   })
-  // }
 }
 
 module.exports = Payment
