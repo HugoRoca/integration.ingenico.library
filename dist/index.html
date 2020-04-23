@@ -13,7 +13,7 @@
   <script src="./payment.js"></script>
   <script src="./payment.providers.ingenico.js"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    (async () => {
       const paymentDetails = {
         totalAmount: 10000,
         countryCode: "NL",
@@ -26,14 +26,9 @@
         cvv: '123',
         expiryDate: '04/22'
       }
-      if (typeof Payment !== "undefined") {
-        const payment = new Payment(
-          paymentDetails,
-          cardDetails
-        );
-        payment.processPayment()
-      }
-    });
+      const payment = new Payment(paymentDetails, cardDetails)
+      console.log(await payment.processEncrytp())
+    })()
   </script>
 </body>
 
